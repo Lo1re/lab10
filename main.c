@@ -1,61 +1,56 @@
-#define _CRT_SECURE_NO_WARNINGS
-#include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
+#include <fstream>
 #include "func.h"
 
-#define SIZE 100
+int main()
+{
+    Book* head = nullptr;
 
-int main() {
-    FILE* file = fopen("books.txt", "r");
-    if (!file) {
-        printf("Error opening file!\n");
-        return 1;
+    std::ifstream fin("books.txt");
+
+    if (fin) {
+        std::string author, title;
+        int year, pages;
+        float price;
+
+        while (std::getline(fin, author) &&
+            std::getline(fin, title) &&
+            fin >> year >> pages >> price)
+        {
+            fin.ignore();
+            insertSorted(head,
+                createBook(author, title, year, pages, price));
+        }
     }
 
-    Book* head = NULL;
-    char author[SIZE], title[SIZE];
-    int year, pages;
-    float price;
-
-    while (
-        fgets(author, SIZE, file) &&
-        fgets(title, SIZE, file) &&
-        fscanf(file, "%d", &year) == 1 &&
-        fscanf(file, "%d", &pages) == 1 &&
-        fscanf(file, "%f", &price) == 1
-        ) {
-        fgetc(file); // пропуск \n
-        trim_newline(author);
-        trim_newline(title);
-
-        insertSorted(&head, createBook(author, title, year, pages, price));
-    }
-
-    fclose(file);
-
-    printf("\nBooks read from file:\n");
+    std::cout << "\nBooks read from file:\n";
     printTable(head);
 
-    printf("\nBooks sorted by year (already sorted by insert):\n");
+    int n;
+    std::cout << "\nHow many books to add? ";
+    std::cin >> n;
+    std::cin.ignore();
+
+    for (int i = 0; i < n; ++i)
+        addBook(head);
+
+    std::cout << "\nBooks after adding:\n";
     printTable(head);
 
-    find3MinPages(head);
+    std::cout << "\nBooks starting with A:\n";
+    printTitleStartsWithA(head);
 
     float avg = calcAvgPages(head);
-    printf("\nAverage pages: %.2f\n", avg);
+    std::cout << "\nAverage pages: " << avg << "\n";
 
-    deleteLessThanAvg(&head, avg);
+    deleteLessThanAvg(head, avg);
 
-    printf("\nBooks with pages >= average:\n");
+    std::cout << "\nBooks with pages >= average:\n";
     printTable(head);
-    swap2Books(head, head->next);
-    
-    printf("\nBooks after swapping the first two:\n");
-    printTable(head);
-    if (head != NULL) {
-        freeBookList(head);
-    }
-    
-    printf("\nMemory freed successfully.\n");
+
+    writeToFile(head, "result.txt");
+
+    freeBookList(head);
+
     return 0;
 }
