@@ -2,41 +2,54 @@
 #include <stdlib.h>
 #include <string.h>
 #include "func.h"
-//ñòâîðèòè êíèãó
-Book* createBook(const char* author, const char* title, int year, int pages, float price) {
-    Book* b = malloc(sizeof(Book));
-    if (!b) return NULL;
-    strncpy_s(b->author, sizeof(b->author), author, _TRUNCATE);
-    strncpy_s(b->title, sizeof(b->title), title, _TRUNCATE);
-    b->year = year;
-    b->pages = pages;
-    b->price = price;
-    b->next = NULL;
 
-    return b;
+Book* createBook(const char* author, const char* title,
+    int year, int pages, float price)
+{
+    Book* newBook = (Book*)malloc(sizeof(Book));
+    if (!newBook) return NULL;
+
+    strncpy_s(newBook->author, sizeof(newBook->author), author, _TRUNCATE);
+    strncpy_s(newBook->title, sizeof(newBook->title), title, _TRUNCATE);
+
+    newBook->year = year;
+    newBook->pages = pages;
+    newBook->price = price;
+    newBook->next = NULL;
+
+    return newBook;
 }
-//ñîðòóâàííÿ âñòààâêîþ
-void insertSorted(Book** head, Book* b) {
-    if (*head == NULL || (*head)->year >= b->year) {
-        b->next = *head;
-        *head = b;
+
+void insertSorted(Book** head, Book* newBook)
+{
+    if (!newBook) return;
+
+    if (*head == NULL || (*head)->year >= newBook->year) {
+        newBook->next = *head;
+        *head = newBook;
         return;
     }
 
-    Book* cur = *head;
-    while (cur->next && cur->next->year < b->year)
-        cur = cur->next;
+    Book* current = *head;
 
-    b->next = cur->next;
-    cur->next = b;
+    while (current->next &&
+        current->next->year < newBook->year)
+    {
+        current = current->next;
+    }
+
+    newBook->next = current->next;
+    current->next = newBook;
 }
 
-void trim_newline(char* s) {
+void trim_newline(char* s)
+{
     if (!s) return;
     s[strcspn(s, "\r\n")] = '\0';
 }
 
-void printTable(const Book* head) {
+void printTable(const Book* head)
+{
     const int authorW = 25;
     const int titleW = 30;
     const int yearW = 5;
@@ -55,6 +68,7 @@ void printTable(const Book* head) {
     putchar('\n');
 
     int count = 0;
+
     while (head) {
         printf("%-*s %-*s %*d %*d %*.2f\n",
             authorW, head->author,
@@ -63,13 +77,15 @@ void printTable(const Book* head) {
             pagesW, head->pages,
             priceW, head->price);
 
-        count++;
         head = head->next;
+        count++;
     }
+
     printf("\ncount of records: %d\n", count);
 }
 
-void find3MinPages(Book* head) {
+void find3MinPages(Book* head)
+{
     Book* min1 = NULL, * min2 = NULL, * min3 = NULL;
 
     while (head) {
@@ -95,7 +111,8 @@ void find3MinPages(Book* head) {
     if (min3) printf("3. %s (%d pages)\n", min3->title, min3->pages);
 }
 
-float calcAvgPages(Book* head) {
+float calcAvgPages(Book* head)
+{
     int sum = 0, count = 0;
 
     while (head) {
@@ -103,41 +120,67 @@ float calcAvgPages(Book* head) {
         count++;
         head = head->next;
     }
+
     return (count == 0) ? 0 : (float)sum / count;
 }
 
-void deleteLessThanAvg(Book** head, float avg) {
+void deleteLessThanAvg(Book** head, float avg)
+{
     while (*head && (*head)->pages < avg) {
-        Book* tmp = *head;
+        Book* temp = *head;
         *head = (*head)->next;
-        free(tmp);
+        free(temp);
     }
 
-    Book* cur = *head;
-    while (cur && cur->next) {
-        if (cur->next->pages < avg) {
-            Book* tmp = cur->next;
-            cur->next = cur->next->next;
-            free(tmp);
+    Book* current = *head;
+
+    while (current && current->next) {
+        if (current->next->pages < avg) {
+            Book* temp = current->next;
+            current->next = current->next->next;
+            free(temp);
         }
         else {
-            cur = cur->next;
+            current = current->next;
         }
     }
 }
 
-void freeBookList(Book* head) {
+void freeBookList(Book* head)
+{
     while (head) {
         Book* next = head->next;
         free(head);
         head = next;
     }
 }
-void swap2Books(Book* a, Book* b) {
-    Book temp = *a;
-    *a = *b;
-    *b = temp;
-    Book* tempNext = a->next;
-    a->next = b->next;
-    b->next = tempNext;
+
+/* Ð‘ÐµÐ·Ð¿ÐµÑ‡Ð½Ð¸Ð¹ swap â€” Ð¼Ñ–Ð½ÑÑ”Ð¼Ð¾ Ñ‚Ñ–Ð»ÑŒÐºÐ¸ Ð´Ð°Ð½Ñ– */
+void swap2Books(Book* a, Book* b)
+{
+    if (!a || !b) return;
+
+    char author[50];
+    char title[50];
+    int year;
+    int pages;
+    float price;
+
+    strcpy_s(author, sizeof(author), a->author);
+    strcpy_s(title, sizeof(title), a->title);
+    year = a->year;
+    pages = a->pages;
+    price = a->price;
+
+    strcpy_s(a->author, sizeof(a->author), b->author);
+    strcpy_s(a->title, sizeof(a->title), b->title);
+    a->year = b->year;
+    a->pages = b->pages;
+    a->price = b->price;
+
+    strcpy_s(b->author, sizeof(b->author), author);
+    strcpy_s(b->title, sizeof(b->title), title);
+    b->year = year;
+    b->pages = pages;
+    b->price = price;
 }
