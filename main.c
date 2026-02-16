@@ -24,7 +24,7 @@ int main() {
         fscanf(file, "%d", &pages) == 1 &&
         fscanf(file, "%f", &price) == 1
         ) {
-        fgetc(file); // пропуск \n
+        fgetc(file); // РїСЂРѕРїСѓСЃРє \n
         trim_newline(author);
         trim_newline(title);
 
@@ -48,14 +48,17 @@ int main() {
 
     printf("\nBooks with pages >= average:\n");
     printTable(head);
-    swap2Books(head, head->next);
+
+        if (head && head->next)
+            swap2Books(head, head->next);
     
+
     printf("\nBooks after swapping the first two:\n");
     printTable(head);
     if (head != NULL) {
         freeBookList(head);
     }
-    
+
     printf("\nMemory freed successfully.\n");
     return 0;
 }
