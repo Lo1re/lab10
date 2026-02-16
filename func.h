@@ -1,28 +1,31 @@
 #ifndef FUNC_H
 #define FUNC_H
 
-typedef struct Book {
-    char author[50];
-    char title[50];
+#include <string>
+
+struct Book {
+    std::string author;
+    std::string title;
     int year;
     int pages;
     float price;
-    struct Book* next;
-} Book;
+    Book* next;
+};
 
-// Створення та додавання
-Book* createBook(const char* author, const char* title, int year, int pages, float price);
-void insertSorted(Book** head, Book* b);
+Book* createBook(const std::string& author,
+    const std::string& title,
+    int year, int pages, float price);
 
-// Вивід
-void printBook(const Book* b);
+void insertSorted(Book*& head, Book* b);
+void addBook(Book*& head);
+
 void printTable(const Book* head);
+void printTitleStartsWithA(const Book* head);
 
-// Додаткові функції
-void trim_newline(char* s);
-void find3MinPages(Book* head);
-float calcAvgPages(Book* head);
-void deleteLessThanAvg(Book** head, float avg);
-void freeBookList(Book* head);
-void swap2Books(Book* a, Book* b);
+float calcAvgPages(const Book* head);
+void deleteLessThanAvg(Book*& head, float avg);
+
+void writeToFile(const Book* head, const std::string& filename);
+void freeBookList(Book*& head);
+
 #endif
