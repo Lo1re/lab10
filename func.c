@@ -1,21 +1,24 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <iostream>
+#include <cstring>
 #include "func.h"
+
+using namespace std;
 
 Book* createBook(const char* author, const char* title,
     int year, int pages, float price)
 {
-    Book* newBook = (Book*)malloc(sizeof(Book));
-    if (!newBook) return NULL;
+    Book* newBook = new Book;
 
-    strncpy_s(newBook->author, sizeof(newBook->author), author, _TRUNCATE);
-    strncpy_s(newBook->title, sizeof(newBook->title), title, _TRUNCATE);
+    strncpy(newBook->author, author, sizeof(newBook->author));
+    newBook->author[sizeof(newBook->author) - 1] = '\0';
+
+    strncpy(newBook->title, title, sizeof(newBook->title));
+    newBook->title[sizeof(newBook->title) - 1] = '\0';
 
     newBook->year = year;
     newBook->pages = pages;
     newBook->price = price;
-    newBook->next = NULL;
+    newBook->next = nullptr;
 
     return newBook;
 }
@@ -24,7 +27,7 @@ void insertSorted(Book** head, Book* newBook)
 {
     if (!newBook) return;
 
-    if (*head == NULL || (*head)->year >= newBook->year) {
+    if (*head == nullptr || (*head)->year >= newBook->year) {
         newBook->next = *head;
         *head = newBook;
         return;
@@ -56,7 +59,8 @@ void printTable(const Book* head)
     const int pagesW = 7;
     const int priceW = 10;
 
-    printf("\n%-*s %-*s %*s %*s %*s\n",
+    cout << "\n";
+    printf("%-*s %-*s %*s %*s %*s\n",
         authorW, "Author",
         titleW, "Title",
         yearW, "Year",
@@ -64,8 +68,8 @@ void printTable(const Book* head)
         priceW, "Price");
 
     int width = authorW + titleW + yearW + pagesW + priceW + 4;
-    for (int i = 0; i < width; i++) putchar('-');
-    putchar('\n');
+    for (int i = 0; i < width; i++) cout << '-';
+    cout << '\n';
 
     int count = 0;
 
@@ -81,12 +85,12 @@ void printTable(const Book* head)
         count++;
     }
 
-    printf("\ncount of records: %d\n", count);
+    cout << "\ncount of records: " << count << "\n";
 }
 
 void find3MinPages(Book* head)
 {
-    Book* min1 = NULL, * min2 = NULL, * min3 = NULL;
+    Book* min1 = nullptr, * min2 = nullptr, * min3 = nullptr;
 
     while (head) {
         if (!min1 || head->pages < min1->pages) {
@@ -105,10 +109,10 @@ void find3MinPages(Book* head)
         head = head->next;
     }
 
-    printf("\nBooks with the three minimum page counts:\n");
-    if (min1) printf("1. %s (%d pages)\n", min1->title, min1->pages);
-    if (min2) printf("2. %s (%d pages)\n", min2->title, min2->pages);
-    if (min3) printf("3. %s (%d pages)\n", min3->title, min3->pages);
+    cout << "\nBooks with the three minimum page counts:\n";
+    if (min1) cout << "1. " << min1->title << " (" << min1->pages << " pages)\n";
+    if (min2) cout << "2. " << min2->title << " (" << min2->pages << " pages)\n";
+    if (min3) cout << "3. " << min3->title << " (" << min3->pages << " pages)\n";
 }
 
 float calcAvgPages(Book* head)
@@ -121,7 +125,7 @@ float calcAvgPages(Book* head)
         head = head->next;
     }
 
-    return (count == 0) ? 0 : (float)sum / count;
+    return (count == 0) ? 0.0f : (float)sum / count;
 }
 
 void deleteLessThanAvg(Book** head, float avg)
@@ -129,7 +133,7 @@ void deleteLessThanAvg(Book** head, float avg)
     while (*head && (*head)->pages < avg) {
         Book* temp = *head;
         *head = (*head)->next;
-        free(temp);
+        delete temp;
     }
 
     Book* current = *head;
@@ -138,7 +142,7 @@ void deleteLessThanAvg(Book** head, float avg)
         if (current->next->pages < avg) {
             Book* temp = current->next;
             current->next = current->next->next;
-            free(temp);
+            delete temp;
         }
         else {
             current = current->next;
@@ -150,37 +154,26 @@ void freeBookList(Book* head)
 {
     while (head) {
         Book* next = head->next;
-        free(head);
+        delete head;
         head = next;
     }
 }
 
-/* Безпечний swap — міняємо тільки дані */
 void swap2Books(Book* a, Book* b)
 {
     if (!a || !b) return;
 
-    char author[50];
-    char title[50];
-    int year;
-    int pages;
-    float price;
+    Book tempData = *a;
 
-    strcpy_s(author, sizeof(author), a->author);
-    strcpy_s(title, sizeof(title), a->title);
-    year = a->year;
-    pages = a->pages;
-    price = a->price;
-
-    strcpy_s(a->author, sizeof(a->author), b->author);
-    strcpy_s(a->title, sizeof(a->title), b->title);
+    strcpy(a->author, b->author);
+    strcpy(a->title, b->title);
     a->year = b->year;
     a->pages = b->pages;
     a->price = b->price;
 
-    strcpy_s(b->author, sizeof(b->author), author);
-    strcpy_s(b->title, sizeof(b->title), title);
-    b->year = year;
-    b->pages = pages;
-    b->price = price;
+    strcpy(b->author, tempData.author);
+    strcpy(b->title, tempData.title);
+    b->year = tempData.year;
+    b->pages = tempData.pages;
+    b->price = tempData.price;
 }
