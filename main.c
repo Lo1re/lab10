@@ -1,42 +1,50 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
+#include <fstream>
+#include <cstdio>
 #include "func.h"
+
+using namespace std;
 
 #define SIZE 100
 
-int main() {
-    FILE* file = fopen("books.txt", "r");
+int main()
+{
+    ifstream file("books.txt");
     if (!file) {
-        printf("Error opening file!\n");
+        cout << "Error opening file!\n";
         return 1;
     }
 
-    Book* head = NULL;
-    char author[SIZE], title[SIZE];
+    Book* head = nullptr;
+
+    char author[SIZE];
+    char title[SIZE];
     int year, pages;
     float price;
 
     while (
-        fgets(author, SIZE, file) &&
-        fgets(title, SIZE, file) &&
-        fscanf(file, "%d", &year) == 1 &&
-        fscanf(file, "%d", &pages) == 1 &&
-        fscanf(file, "%f", &price) == 1
+        file.getline(author, SIZE) &&
+        file.getline(title, SIZE) &&
+        (file >> year) &&
+        (file >> pages) &&
+        (file >> price)
         ) {
-        fgetc(file); // пропуск \n
+        file.ignore();
+
         trim_newline(author);
         trim_newline(title);
 
-        insertSorted(&head, createBook(author, title, year, pages, price));
+        insertSorted(&head,
+            createBook(author, title, year, pages, price));
     }
 
-    fclose(file);
+    file.close();
 
-    printf("\nBooks read from file:\n");
+    cout << "\nBooks read from file:\n";
     printTable(head);
 
-    printf("\nBooks sorted by year (already sorted by insert):\n");
+    cout << "\nBooks sorted by year (already sorted by insert):\n";
     printTable(head);
 
     find3MinPages(head);
@@ -46,19 +54,17 @@ int main() {
 
     deleteLessThanAvg(&head, avg);
 
-    printf("\nBooks with pages >= average:\n");
+    cout << "\nBooks with pages >= average:\n";
     printTable(head);
 
-        if (head && head->next)
-            swap2Books(head, head->next);
-    
+    if (head && head->next)
+        swap2Books(head, head->next);
 
-    printf("\nBooks after swapping the first two:\n");
+    cout << "\nBooks after swapping the first two:\n";
     printTable(head);
-    if (head != NULL) {
-        freeBookList(head);
-    }
 
-    printf("\nMemory freed successfully.\n");
+    freeBookList(head);
+
+    cout << "\nMemory freed successfully.\n";
     return 0;
 }
