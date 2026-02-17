@@ -1,21 +1,24 @@
 #ifndef FUNC_H
 #define FUNC_H
 
-typedef struct Book {
+struct Book {
     char author[50];
     char title[50];
     int year;
     int pages;
     float price;
-    struct Book* next;
-} Book;
+    Book* next;
+};
 
-Book* createBook(const char* author, const char* title, int year, int pages, float price);
+// Створення та додавання
+Book* createBook(const char* author, const char* title,
+    int year, int pages, float price);
 void insertSorted(Book** head, Book* newBook);
 
-void printBook(const Book* b);
+// Вивід
 void printTable(const Book* head);
 
+// Додаткові функції
 void trim_newline(char* s);
 void find3MinPages(Book* head);
 float calcAvgPages(Book* head);
