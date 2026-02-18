@@ -1,9 +1,11 @@
 #ifndef FUNC_H
 #define FUNC_H
 
+#include <string>
+
 struct Book {
-    char author[50];
-    char title[50];
+    std::string author;
+    std::string title;
     int year;
     int pages;
     float price;
@@ -11,19 +13,24 @@ struct Book {
 };
 
 // Створення та додавання
-Book* createBook(const char* author, const char* title,
-    int year, int pages, float price);
+Book* createBook(const std::string& author, const std::string& title, int year, int pages, float price);
 void insertSorted(Book** head, Book* newBook);
 
 // Вивід
 void printTable(const Book* head);
 
-// Додаткові функції
-void trim_newline(char* s);
-void find3MinPages(Book* head);
+// Файловий ввід/вивід
+Book* readBooksFromFile(const std::string& filename);
+void writeBooksToFile(const std::string& filename, Book* head);
+
+// Логіка пошуку та видалення
+void findBooksStartingWithA(const Book* head);
+void find3MinPages(const Book* head);
 float calcAvgPages(Book* head);
 void deleteLessThanAvg(Book** head, float avg);
-void freeBookList(Book* head);
+
+// Допоміжне
 void swap2Books(Book* a, Book* b);
+void freeBookList(Book* head);
 
 #endif
