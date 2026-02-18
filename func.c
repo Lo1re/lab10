@@ -1,148 +1,150 @@
-#include <iostream>
-#include <cstring>
 #include "func.h"
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <limits>
 
-using namespace std;
-
-Book* createBook(const char* author, const char* title,
-    int year, int pages, float price)
-{
-    Book* newBook = new Book;
-
-    strncpy(newBook->author, author, sizeof(newBook->author));
-    newBook->author[sizeof(newBook->author) - 1] = '\0';
-
-    strncpy(newBook->title, title, sizeof(newBook->title));
-    newBook->title[sizeof(newBook->title) - 1] = '\0';
-
-    newBook->year = year;
-    newBook->pages = pages;
-    newBook->price = price;
-    newBook->next = nullptr;
-
+// Створення книги
+Book* createBook(const std::string& author, const std::string& title, int year, int pages, float price) {
+    Book* newBook = new Book{ author, title, year, pages, price, nullptr };
     return newBook;
 }
 
-void insertSorted(Book** head, Book* newBook)
-{
-    if (!newBook) return;
-
-    if (*head == nullptr || (*head)->year >= newBook->year) {
+// Додавання у список у порядку спадання року
+void insertSorted(Book** head, Book* newBook) {
+    if (!*head || newBook->year > (*head)->year) {
         newBook->next = *head;
         *head = newBook;
         return;
     }
-
     Book* current = *head;
-
-    while (current->next &&
-        current->next->year < newBook->year)
-    {
+    while (current->next && current->next->year >= newBook->year)
         current = current->next;
-    }
-
     newBook->next = current->next;
     current->next = newBook;
 }
 
-void trim_newline(char* s)
-{
-    if (!s) return;
-    s[strcspn(s, "\r\n")] = '\0';
-}
-
-void printTable(const Book* head)
-{
-    const int authorW = 25;
-    const int titleW = 30;
-    const int yearW = 5;
-    const int pagesW = 7;
-    const int priceW = 10;
-
-    cout << "\n";
-    printf("%-*s %-*s %*s %*s %*s\n",
-        authorW, "Author",
-        titleW, "Title",
-        yearW, "Year",
-        pagesW, "Pages",
-        priceW, "Price");
-
-    int width = authorW + titleW + yearW + pagesW + priceW + 4;
-    for (int i = 0; i < width; i++) cout << '-';
-    cout << '\n';
+// Вивід таблиці
+void printTable(const Book* head) {
+    std::cout << "\n" << std::left
+        << std::setw(25) << "Author"
+        << std::setw(30) << "Title"
+        << std::setw(6) << "Year"
+        << std::setw(7) << "Pages"
+        << std::setw(10) << "Price" << "\n";
+    std::cout << std::string(78, '-') << "\n";
 
     int count = 0;
-
     while (head) {
-        printf("%-*s %-*s %*d %*d %*.2f\n",
-            authorW, head->author,
-            titleW, head->title,
-            yearW, head->year,
-            pagesW, head->pages,
-            priceW, head->price);
-
+        std::cout << std::left
+            << std::setw(25) << head->author
+            << std::setw(30) << head->title
+            << std::setw(6) << head->year
+            << std::setw(7) << head->pages
+            << std::fixed << std::setprecision(2)
+            << std::setw(10) << head->price << "\n";
         head = head->next;
         count++;
     }
-
-    cout << "\ncount of records: " << count << "\n";
+    std::cout << "Total records: " << count << "\n";
 }
 
-void find3MinPages(Book* head)
-{
-    Book* min1 = nullptr, * min2 = nullptr, * min3 = nullptr;
+// Читання з файлу
+Book* readBooksFromFile(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file) {
+        std::cerr << "Error: cannot open file " << filename << "\n";
+        return nullptr;
+    }
 
+    Book* head = nullptr;
+    std::string author, title;
+    int year, pages;
+    float price;
+
+    while (std::getline(file, author)) {
+        if (!std::getline(file, title)) break;
+        if (!(file >> year >> pages >> price)) {
+            std::cerr << "Warning: invalid record skipped.\n";
+            file.clear();
+            file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            continue;
+        }
+        file.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // пропуск кінця рядка
+        insertSorted(&head, createBook(author, title, year, pages, price));
+    }
+
+    return head;
+}
+
+// Запис у файл
+void writeBooksToFile(const std::string& filename, Book* head) {
+    std::ofstream file(filename);
+    if (!file) {
+        std::cerr << "Error: cannot write to file " << filename << "\n";
+        return;
+    }
+    while (head) {
+        file << head->author << "\n"
+            << head->title << "\n"
+            << head->year << " " << head->pages << " " << head->price << "\n";
+        head = head->next;
+    }
+}
+
+// Пошук книг, що починаються на "А"
+void findBooksStartingWithA(const Book* head) {
+    std::cout << "\nBooks starting with 'A':\n";
+    while (head) {
+        if (!head->title.empty() && (head->title[0] == 'A' || head->title[0] == 'А')) {
+            std::cout << head->title << " (" << head->year << ")\n";
+        }
+        head = head->next;
+    }
+}
+
+// Пошук трьох книг з мінімальною кількістю сторінок
+void find3MinPages(const Book* head) {
+    const Book* min1 = nullptr, * min2 = nullptr, * min3 = nullptr;
     while (head) {
         if (!min1 || head->pages < min1->pages) {
-            min3 = min2;
-            min2 = min1;
-            min1 = head;
+            min3 = min2; min2 = min1; min1 = head;
         }
         else if (!min2 || head->pages < min2->pages) {
-            min3 = min2;
-            min2 = head;
+            min3 = min2; min2 = head;
         }
         else if (!min3 || head->pages < min3->pages) {
             min3 = head;
         }
-
         head = head->next;
     }
 
-    cout << "\nBooks with the three minimum page counts:\n";
-    if (min1) cout << "1. " << min1->title << " (" << min1->pages << " pages)\n";
-    if (min2) cout << "2. " << min2->title << " (" << min2->pages << " pages)\n";
-    if (min3) cout << "3. " << min3->title << " (" << min3->pages << " pages)\n";
+    std::cout << "\nBooks with three minimum page counts:\n";
+    if (min1) std::cout << "1. " << min1->title << " (" << min1->pages << " pages)\n";
+    if (min2) std::cout << "2. " << min2->title << " (" << min2->pages << " pages)\n";
+    if (min3) std::cout << "3. " << min3->title << " (" << min3->pages << " pages)\n";
 }
 
-float calcAvgPages(Book* head)
-{
+// Середня кількість сторінок
+float calcAvgPages(Book* head) {
     int sum = 0, count = 0;
-
-    while (head) {
-        sum += head->pages;
-        count++;
-        head = head->next;
-    }
-
-    return (count == 0) ? 0.0f : (float)sum / count;
+    while (head) { sum += head->pages; count++; head = head->next; }
+    return count ? static_cast<float>(sum) / count : 0.0f;
 }
 
-void deleteLessThanAvg(Book** head, float avg)
-{
+// Видалення книг з менше середньої сторінок
+void deleteLessThanAvg(Book** head, float avg) {
     while (*head && (*head)->pages < avg) {
-        Book* temp = *head;
+        Book* tmp = *head;
         *head = (*head)->next;
-        delete temp;
+        delete tmp;
     }
-
     Book* current = *head;
-
     while (current && current->next) {
         if (current->next->pages < avg) {
-            Book* temp = current->next;
-            current->next = current->next->next;
-            delete temp;
+            Book* tmp = current->next;
+            current->next = tmp->next;
+            delete tmp;
         }
         else {
             current = current->next;
@@ -150,30 +152,18 @@ void deleteLessThanAvg(Book** head, float avg)
     }
 }
 
-void freeBookList(Book* head)
-{
-    while (head) {
-        Book* next = head->next;
-        delete head;
-        head = next;
-    }
+// Swap перших двох книг
+void swap2Books(Book* a, Book* b) {
+    if (!a || !b) return;
+    std::swap(*a, *b);
+    std::swap(a->next, b->next);
 }
 
-void swap2Books(Book* a, Book* b)
-{
-    if (!a || !b) return;
-
-    Book tempData = *a;
-
-    strcpy(a->author, b->author);
-    strcpy(a->title, b->title);
-    a->year = b->year;
-    a->pages = b->pages;
-    a->price = b->price;
-
-    strcpy(b->author, tempData.author);
-    strcpy(b->title, tempData.title);
-    b->year = tempData.year;
-    b->pages = tempData.pages;
-    b->price = tempData.price;
+// Звільнення пам'яті
+void freeBookList(Book* head) {
+    while (head) {
+        Book* tmp = head;
+        head = head->next;
+        delete tmp;
+    }
 }
