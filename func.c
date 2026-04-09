@@ -1,8 +1,97 @@
 #include "func.h"
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-#include <limits>
+#include <vector>
+//functions for book management
+bool isValidAuthor(const std::string& author) {
+    if (author.empty() || author.length() > 50) return false;
+    for (size_t i = 0; i < author.length(); ++i) {
+        unsigned char c = author[i];
+        if (!std::isalpha(c) && !std::isspace(c) && c != '-' && c != '\'')
+            return false;
+    }
+    return true;
+}
+std::string trim(const std::string& s) {
+    int start = 0;
+    while (start < (int)s.length() && std::isspace(s[start])) start++;
+    int end = (int)s.length() - 1;
+    while (end >= start && std::isspace(s[end])) end--;
+    if (start > end) return "";
+    return s.substr(start, end - start + 1);
+}
+std::string replaceCommaWithDot(const std::string& s) {
+    std::string result = s;
+    for (char& ch : result) {
+        if (ch == ',') {
+            ch = '.';
+        }
+    }
+    return result;
+}
+
+bool isValidLength(const std::string& s, size_t maxLen) {
+    return !s.empty() && s.length() <= maxLen;
+}
+
+bool isValidTitle(const std::string& title) {
+    if (title.empty() || title.length() > 50) return false;
+    for (char ch : title) {
+        unsigned char c = (unsigned char)ch;
+        if (!std::isalnum(c) && ch != ' ' && ch != '-' && ch != '\'')
+            return false;
+    }
+    return true;
+}
+bool parseAndValidateYear(const std::string& s, int& year) {
+    std::istringstream iss(s);
+    std::string extra;
+
+    if (!(iss >> year) || (iss >> extra)) {
+        return false;
+    }
+
+    return year > 0 && year <= 2026;
+}
+bool parseAndValidatePages(const std::string& s, int& pages) {
+    std::istringstream iss(s);
+    std::string extra;
+
+    if (!(iss >> pages) || (iss >> extra)) {
+        return false;
+    }
+
+    return pages > 0 && pages <= 10000;
+}
+bool parseAndValidatePrice(const std::string& s, float& price) {
+    std::istringstream iss(s);
+    std::string extra;
+
+    if (!(iss >> price) || (iss >> extra)) {
+        return false;
+    }
+
+    return price > 0 && price <= 50000;
+}
+bool readNonEmptyLine(std::ifstream& f, std::string& out) {
+    while (std::getline(f, out)) {
+        out = trim(out);
+        if (!out.empty()) return true;
+    }
+    return false;
+}
+// helper
+bool looksLikeAuthor(const std::string& line) {
+    std::string trimmed = trim(line);
+    if (trimmed.empty()) return false;
+    for (char ch : trimmed) {
+        unsigned char c = (unsigned char)ch;
+        if (!std::isalpha(c) && !std::isspace(c) && c != '-' && c != '\'') return false;
+    }
+    return true;
+}
+
+
+
+
 
 // Створення книги
 Book* createBook(const std::string& author, const std::string& title, int year, int pages, float price) {
@@ -58,36 +147,142 @@ Book* readBooksFromFile(const std::string& filename) {
     }
 
     Book* head = nullptr;
-    std::string author, title;
-    int year, pages;
-    float price;
+    bool anyrecords = false;
 
-    while (std::getline(file, author)) {
-        if (!std::getline(file, title)) break;
-        if (!(file >> year >> pages >> price)) {
-            std::cerr << "Warning: invalid record skipped.\n";
-            file.clear();
-            file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::vector<std::string> lines;
+    std::string line;
+
+
+    while (std::getline(file, line)) {
+        line = trim(line);
+        if (!line.empty()) {
+            lines.push_back(line);
+        }
+    }
+
+    if (lines.empty()) {
+        std::cout << "Notice: file is empty or contains no valid records.\n";
+        return nullptr;
+    }
+
+    size_t i = 0;
+    while (i < lines.size()) {
+        std::string author = lines[i];
+
+        if (!looksLikeAuthor(author)) {
+            i++;
             continue;
         }
-        file.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // пропуск кінця рядка
+
+        if (i + 4 >= lines.size()) {
+            std::cerr << "Warning: incomplete record skipped.\n";
+            break;
+        }
+
+        std::string title = lines[i + 1];
+        std::string yearLine = lines[i + 2];
+        std::string pagesLine = lines[i + 3];
+        std::string priceLine = replaceCommaWithDot(lines[i + 4]);
+
+        int year, pages, tempInt;
+        float price, tempFloat;
+       
+        if (parseAndValidateYear(title, tempInt)) {
+            std::cerr << "Warning: title is missing. Record skipped.\n";
+            i += 1; 
+            continue;
+        }
+
+        if (!parseAndValidateYear(yearLine, tempInt) &&
+            parseAndValidatePages(yearLine, tempInt) &&
+            parseAndValidatePrice(replaceCommaWithDot(pagesLine), tempFloat)) {
+            std::cerr << "Warning: year is missing. Record skipped.\n";
+            i += 2; 
+            continue;
+        }
+
+        if (parseAndValidateYear(yearLine, tempInt) &&
+            !parseAndValidatePages(pagesLine, tempInt) &&
+            parseAndValidatePrice(replaceCommaWithDot(pagesLine), tempFloat)) {
+            std::cerr << "Warning: pages are missing. Record skipped.\n";
+            i += 3; 
+            continue;
+        }
+
+
+        if (parseAndValidateYear(yearLine, tempInt) &&
+            parseAndValidatePages(pagesLine, tempInt) &&
+            looksLikeAuthor(priceLine)) {
+            std::cerr << "Warning: price is missing. Record skipped.\n";
+            i += 4; // author + title + year + pages
+            continue;
+        }
+
+
+        if (!isValidAuthor(author)) {
+            std::cerr << "Warning: invalid author. Record skipped.\n";
+            i += 1;
+            continue;
+        }
+
+        if (!isValidTitle(title)) {
+            std::cerr << "Warning: invalid title. Record skipped.\n";
+            i += 2;
+            continue;
+        }
+
+        if (!parseAndValidateYear(yearLine, year)) {
+            std::cerr << "Warning: invalid year. Record skipped.\n";
+            i += 3;
+            continue;
+        }
+
+        if (!parseAndValidatePages(pagesLine, pages)) {
+            std::cerr << "Warning: invalid pages. Record skipped.\n";
+            i += 4;
+            continue;
+        }
+
+        if (!parseAndValidatePrice(priceLine, price)) {
+            std::cerr << "Warning: invalid price. Record skipped.\n";
+            i += 5;
+            continue;
+        }
+
+
         insertSorted(&head, createBook(author, title, year, pages, price));
+        anyrecords = true;
+
+        i += 5;
+    }
+
+    if (!anyrecords) {
+        std::cout << "Notice: file is empty or contains no valid records.\n";
     }
 
     return head;
 }
-
-// Запис у файл
+//
 void writeBooksToFile(const std::string& filename, Book* head) {
     std::ofstream file(filename);
     if (!file) {
         std::cerr << "Error: cannot write to file " << filename << "\n";
         return;
     }
+
+    file.imbue(std::locale::classic()); 
+
+    if (!head) {
+        std::cout << "Notice: nothing to write, list is empty.\n";
+        return;
+    }
+
     while (head) {
         file << head->author << "\n"
             << head->title << "\n"
-            << head->year << " " << head->pages << " " << head->price << "\n";
+            << head->year << "\n"
+            << head->pages << "\n"
+            << std::fixed << std::setprecision(2) << head->price << "\n";
         head = head->next;
     }
 }
@@ -105,17 +300,46 @@ void findBooksStartingWithA(const Book* head) {
 
 // Пошук трьох книг з мінімальною кількістю сторінок
 void find3MinPages(const Book* head) {
+    if (!head) {
+        std::cout << "\nThe list is empty.\n";
+        return;
+    }
+
+    // Перевірка: чи всі книги мають однакову кількість сторінок
+    int firstPages = head->pages;
+    bool allSame = true;
+    const Book* temp = head;
+
+    while (temp) {
+        if (temp->pages != firstPages) {
+            allSame = false;
+            break;
+        }
+        temp = temp->next;
+    }
+
+    if (allSame) {
+        std::cout << "\nAll books have the same number of pages: "
+            << firstPages << " pages.\n";
+        return;
+    }
+
     const Book* min1 = nullptr, * min2 = nullptr, * min3 = nullptr;
+
     while (head) {
         if (!min1 || head->pages < min1->pages) {
-            min3 = min2; min2 = min1; min1 = head;
+            min3 = min2;
+            min2 = min1;
+            min1 = head;
         }
-        else if (!min2 || head->pages < min2->pages) {
-            min3 = min2; min2 = head;
+        else if (head != min1 && (!min2 || head->pages < min2->pages)) {
+            min3 = min2;
+            min2 = head;
         }
-        else if (!min3 || head->pages < min3->pages) {
+        else if (head != min1 && head != min2 && (!min3 || head->pages < min3->pages)) {
             min3 = head;
         }
+
         head = head->next;
     }
 
@@ -134,10 +358,12 @@ float calcAvgPages(Book* head) {
 
 // Видалення книг з менше середньої сторінок
 void deleteLessThanAvg(Book** head, float avg) {
+	bool anyDeleted = false;
     while (*head && (*head)->pages < avg) {
         Book* tmp = *head;
         *head = (*head)->next;
         delete tmp;
+		anyDeleted = true;
     }
     Book* current = *head;
     while (current && current->next) {
@@ -145,10 +371,14 @@ void deleteLessThanAvg(Book** head, float avg) {
             Book* tmp = current->next;
             current->next = tmp->next;
             delete tmp;
+			anyDeleted = true;
         }
         else {
             current = current->next;
         }
+    }
+    if (!anyDeleted) {
+        std::cout << "\nNo books were deleted, all have pages >= average (" << avg << " pages).\n";
     }
 }
 
